@@ -29,18 +29,3 @@ Install via Claude Code's plugin system:
 ```
 
 Or browse in `/plugin > Discover`.
-
-## Marketplace
-
-This repo is registered as the `my-plugins` marketplace. Add it to your dotfiles via `claude/plugins/known_marketplaces.json`:
-
-```json
-{
-  "my-plugins": {
-    "source": {
-      "source": "github",
-      "repo": "moon1ite/claude-plugins"
-    }
-  }
-}
-```

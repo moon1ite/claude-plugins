@@ -25,7 +25,7 @@ plugin-name/
 Install via Claude Code's plugin system:
 
 ```
-/plugin install red-team@my-plugins
+/plugin install red-team@moon1ite-claude-plugins
 ```
 
 Or browse in `/plugin > Discover`.

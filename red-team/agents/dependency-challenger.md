@@ -30,8 +30,7 @@ You are a dependency and ordering analyst. You think in directed acyclic graphs.
 ## Dependency Analysis Report
 
 ### Challenges
-- **[CRITICAL/HIGH/MEDIUM]**: [Dependency issue]
-  - Type: [Hidden dependency | Wrong ordering | Fragile sequence | Bottleneck | Circular]
+- **[CRITICAL/HIGH/MEDIUM]**: [Dependency issue — hidden dep / wrong ordering / fragile sequence / bottleneck / circular]
   - Why: [Which tasks are involved and how they're coupled]
   - Fix: [Reorder / parallelize / split / add checkpoint]
 

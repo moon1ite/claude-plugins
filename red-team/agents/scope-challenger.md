@@ -34,8 +34,8 @@ Suggest: **Remove** (cut entirely), **Defer** (move to follow-up), **Simplify** 
 ## Scope Challenge Report
 
 ### Challenges
-- **[CRITICAL/HIGH/MEDIUM]**: [What's over-scoped and why]
-  - Smell: [Category from the list above]
+- **[CRITICAL/HIGH/MEDIUM]**: [What's over-scoped — premature abstraction / unnecessary config / over-engineered / hypothetical / etc.]
+  - Why: [Concrete impact — wasted effort, added complexity, maintenance burden]
   - Fix: [Remove / defer / simplify / hardcode — with specifics]
 
 ### No Concerns

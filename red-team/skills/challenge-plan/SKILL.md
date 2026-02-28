@@ -1,13 +1,13 @@
 ---
 name: challenge-plan
-description: Use after writing-plans to stress-test an implementation plan before execution. Dispatches all challenger agents in parallel.
+description: Use after writing-plans to stress-test an implementation plan before execution. Dispatches red-team agents in parallel.
 argument-hint: "[path-to-plan]"
 allowed-tools: ["Read", "Glob", "Grep", "Task"]
 ---
 
 # Red Team Challenge Plan
 
-Stress-test an implementation plan by dispatching all red-team challenger agents in parallel, then consolidating their findings into a single actionable report.
+Stress-test an implementation plan by dispatching red-team agents in parallel, then consolidating findings into a single actionable report.
 
 **Plan path (optional):** "$ARGUMENTS"
 
@@ -15,172 +15,76 @@ Stress-test an implementation plan by dispatching all red-team challenger agents
 
 ### Step 1: Locate the Plan
 
-- If `"$ARGUMENTS"` is provided and non-empty, use that as the path to the plan file. Read the file with the Read tool.
-- If no argument is provided, use Glob to find the most recent `docs/plans/*.md` file. If multiple exist, pick the one with the most recent modification time (Glob results are sorted by mtime). Read that file.
-- If no plan file is found, tell the user and stop.
+- If `"$ARGUMENTS"` is provided, read that file.
+- Otherwise, use Glob to find the most recent `docs/plans/*.md` file (sorted by mtime). Read it.
+- If no plan file found, tell the user and stop.
 
 ### Step 2: Read Context
 
-- Read the plan file content in full.
-- Check if a `CLAUDE.md` file exists at the project root (use Glob for `CLAUDE.md`). If it exists, read it — this provides project-specific conventions, patterns, and constraints that agents need for accurate analysis.
-- Store both the plan content and the CLAUDE.md content (if any) for passing to agents.
+- Read the plan file in full.
+- Check for a `CLAUDE.md` at project root. If it exists, read it for project conventions.
 
-### Step 3: Dispatch All Red-Team Agents in Parallel
+### Step 3: Dispatch Red-Team Agents in Parallel
 
-Launch **all five agents simultaneously** using the Task tool. Make all five Task tool calls in a **single message** so they run in parallel.
+Launch **all four agents simultaneously** using the Task tool in a **single message**.
 
-For each agent, provide:
-- The full plan text (do NOT make agents read files — pass the content directly)
-- The CLAUDE.md context if available
-- A clear instruction to analyze the plan from their specific angle
+For each agent, pass the full plan text (and CLAUDE.md context if available) directly — don't make agents read files.
 
-**Launch these five agents in parallel:**
-
-#### assumption-challenger
+#### risk-analyst
 ```
-subagent_type: "red-team:assumption-challenger"
+subagent_type: "red-team:risk-analyst"
 ```
-Prompt: Provide the full plan text and CLAUDE.md context. Ask it to identify all unstated assumptions — what does this plan take for granted about APIs, dependencies, environment, data, tooling, and team knowledge?
-
-#### failure-premortem
-```
-subagent_type: "red-team:failure-premortem"
-```
-Prompt: Provide the full plan text and CLAUDE.md context. Ask it to assume the plan has already been executed and failed catastrophically, then work backward to identify the most likely root causes.
-
-#### scope-challenger
-```
-subagent_type: "red-team:scope-challenger"
-```
-Prompt: Provide the full plan text and CLAUDE.md context. Ask it to flag YAGNI violations, over-engineering, unnecessary complexity, and tasks that could be deferred or removed for v1.
-
-#### dependency-challenger
-```
-subagent_type: "red-team:dependency-challenger"
-```
-Prompt: Provide the full plan text and CLAUDE.md context. Ask it to analyze task dependencies and ordering — find hidden dependencies, incorrect sequencing, and missed parallelism opportunities.
+Ask it to surface unstated assumptions and likely failure modes.
 
 #### gap-analyzer
 ```
 subagent_type: "red-team:gap-analyzer"
 ```
-Prompt: Provide the full plan text and CLAUDE.md context. Ask it to find what's MISSING from the plan — untested edge cases, unhandled error paths, missing rollback procedures, missing config changes, and missing documentation.
+Ask it to find missing steps — error handling, rollback, validation, config, security.
 
-### Step 4: Consolidate Findings
+#### dependency-challenger
+```
+subagent_type: "red-team:dependency-challenger"
+```
+Ask it to analyze task ordering — hidden dependencies, wrong sequencing, parallelism opportunities.
 
-After all five agents return their reports, merge their findings into a single structured document. Classify every issue by severity:
+#### scope-challenger
+```
+subagent_type: "red-team:scope-challenger"
+```
+Ask it to flag YAGNI violations, over-engineering, and tasks that can be deferred or cut.
 
-- **Critical** — Must address before execution. The plan will likely fail or cause serious damage if these are ignored.
-- **High** — Should address before execution. Significant risk or technical debt.
-- **Medium** — Consider addressing. Improvements that would make the plan more robust.
+### Step 4: Consolidate and Present
 
-Organize the consolidated report using this exact format:
+Merge all agent findings into one report. Classify by severity:
+
+- **Critical** — Must fix before execution. Plan will likely fail without this.
+- **High** — Should fix. Significant risk or debt.
+- **Medium** — Consider fixing. Makes the plan more robust.
+
+Use this format:
 
 ```markdown
-# Red Team Challenge Report
+# Red Team Report
 
-**Plan reviewed:** [plan file path]
-**Agents dispatched:** 5
+**Plan:** [path] | **Agents:** 4 | **Verdict:** BLOCK / REVISE / PROCEED
 
-## Critical Issues (must address before execution)
-- **[agent-name]**: Issue description
-  - Evidence: ...
-  - Impact: ...
-  - Suggested revision: ...
+## Critical (must fix)
+- **[agent]**: [finding] → [suggested fix]
 
-## High Priority (should address)
-- **[agent-name]**: Issue description
-  - Evidence: ...
-  - Impact: ...
-  - Suggested revision: ...
+## High (should fix)
+- **[agent]**: [finding] → [suggested fix]
 
-## Medium Priority (consider addressing)
-- **[agent-name]**: Issue description
-  - Evidence: ...
-  - Impact: ...
-  - Suggested revision: ...
+## Medium (consider)
+- **[agent]**: [finding] → [suggested fix]
 
-## Suggested Plan Revisions (summary)
-1. [revision from agent-name]
-2. [revision from agent-name]
-...
-
-## Plan Strengths
-- What the agents found well-designed
-
-## Verdict
-[BLOCK / REVISE / PROCEED]
-- BLOCK: Critical issues found that would likely cause failure
-- REVISE: High-priority issues that should be addressed before execution
-- PROCEED: No critical or high issues, plan is ready for execution
+## Strengths
+- [what's well-designed]
 ```
 
 **Verdict rules:**
-- If ANY critical issues exist: **BLOCK**
-- If no critical but any high-priority issues exist: **REVISE**
-- If only medium or no issues: **PROCEED**
+- Any critical issues → **BLOCK**
+- No critical but any high → **REVISE**
+- Only medium or none → **PROCEED**
 
-### Step 5: Present to User
-
-Display the full consolidated report, then ask the user what they want to do next:
-- Revise the plan based on the findings
-- Re-run the challenge after revisions
-- Proceed with execution despite the findings
-- Drill deeper into a specific agent's analysis
-
-## Agent Descriptions
-
-**assumption-challenger:**
-- Uncovers unstated assumptions about APIs, environment, data, and tooling
-- Tests whether "it should work" claims have evidence
-- Identifies compounding assumption risk
-
-**failure-premortem:**
-- Assumes the plan already failed and works backward
-- Identifies most likely root causes of failure
-- Focuses on boring, common failures over exotic edge cases
-
-**scope-challenger:**
-- Flags YAGNI violations and over-engineering
-- Identifies tasks that can be deferred or removed
-- Challenges premature abstractions and unnecessary complexity
-
-**dependency-challenger:**
-- Maps implicit dependency graphs between tasks
-- Finds incorrect ordering and hidden dependencies
-- Identifies parallelism opportunities to shorten the critical path
-
-**gap-analyzer:**
-- Finds what's NOT in the plan — missing steps, missing error handling
-- Checks for rollback procedures, cleanup, and documentation
-- Identifies missing tests and validation steps
-
-## Usage Examples
-
-**Challenge a specific plan:**
-```
-/red-team:challenge-plan docs/plans/add-authentication.md
-```
-
-**Challenge the most recent plan (auto-detect):**
-```
-/red-team:challenge-plan
-```
-
-**Typical workflow:**
-```
-1. Write your implementation plan to docs/plans/feature-name.md
-2. Run: /red-team:challenge-plan docs/plans/feature-name.md
-3. Review the consolidated report
-4. Revise the plan based on critical and high-priority findings
-5. Re-run: /red-team:challenge-plan docs/plans/feature-name.md
-6. Once verdict is PROCEED, begin execution
-```
-
-## Tips
-
-- **Run before execution, not after** — the whole point is to catch issues before you write code
-- **Critical = stop** — if the verdict is BLOCK, do not proceed until critical issues are resolved
-- **Agents are adversarial by design** — they will find issues even in good plans. Focus on critical and high severity.
-- **Re-run after revisions** — a second pass often catches new issues introduced by fixes
-- **Pass context** — if the plan references external docs or constraints, mention them in the plan file so agents can account for them
+Then ask the user: revise the plan, re-run the challenge, proceed anyway, or drill into a specific agent's analysis.

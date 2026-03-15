@@ -1,13 +1,118 @@
 ---
 description: "Red-team an implementation plan — dispatches challenger agents to find blind spots, failure modes, and scope issues"
 argument-hint: "[path-to-plan]"
-allowed-tools: ["Read", "Glob", "Grep", "Task"]
+allowed-tools: ["Read", "Glob", "Grep", "Agent", "Bash"]
 ---
 
-# Challenge Plan
+# Red Team Challenge Plan
 
-Run the `red-team:challenge-plan` skill with the provided arguments.
+Stress-test an implementation plan by dispatching red-team agents in parallel, then consolidating findings into a single actionable report.
 
-**Arguments:** "$ARGUMENTS"
+**Plan path (optional):** "$ARGUMENTS"
 
-Invoke the skill `red-team:challenge-plan` now. Pass `"$ARGUMENTS"` as the plan path. The skill contains the full workflow — follow it exactly.
+## Workflow
+
+### Step 1: Locate the Plan
+
+- If `"$ARGUMENTS"` is provided, read that file.
+- Otherwise, use Glob to find the most recent `docs/plans/*.md` file (sorted by mtime). Read it.
+- If no plan file found, tell the user and stop.
+
+### Step 2: Read Context
+
+- Read the plan file in full.
+- Check for a `CLAUDE.md` at project root. If it exists, read it for project conventions.
+
+### Step 3: Dispatch Red-Team Agents in Parallel
+
+Launch **all four agents simultaneously** using the Agent tool in a **single message**.
+
+For each agent, pass the full plan text (and CLAUDE.md context if available) directly — don't make agents read files.
+
+#### risk-analyst
+
+```
+subagent_type: "red-team:risk-analyst"
+```
+
+Ask it to surface unstated assumptions and likely failure modes.
+
+#### gap-analyzer
+
+```
+subagent_type: "red-team:gap-analyzer"
+```
+
+Ask it to find missing steps — error handling, rollback, validation, config, security.
+
+#### dependency-challenger
+
+```
+subagent_type: "red-team:dependency-challenger"
+```
+
+Ask it to analyze task ordering — hidden dependencies, wrong sequencing, parallelism opportunities.
+
+#### scope-challenger
+
+```
+subagent_type: "red-team:scope-challenger"
+```
+
+Ask it to flag YAGNI violations, over-engineering, and tasks that can be deferred or cut.
+
+### Step 4: Consolidate and Present
+
+Merge all agent findings into one report. Classify by severity:
+
+- **Critical** — Must fix before execution. Plan will likely fail without this.
+- **High** — Should fix. Significant risk or debt.
+- **Medium** — Consider fixing. Makes the plan more robust.
+
+Use this format:
+
+```markdown
+# Red Team Report
+
+**Plan:** [path] | **Agents:** 4 | **Verdict:** BLOCK / REVISE / PROCEED
+
+## Critical (must fix)
+- **[agent]**: [finding] → [suggested fix]
+
+## High (should fix)
+- **[agent]**: [finding] → [suggested fix]
+
+## Medium (consider)
+- **[agent]**: [finding] → [suggested fix]
+
+## Strengths
+- [what's well-designed]
+```
+
+**Verdict rules:**
+
+- Any critical issues → **BLOCK**
+- No critical but any high → **REVISE**
+- Only medium or none → **PROCEED**
+
+Then ask the user: revise the plan, re-run the challenge, proceed anyway, or drill into a specific agent's analysis.
+
+## Usage Examples
+
+**Default (auto-find latest plan):**
+
+```
+/challenge-plan
+```
+
+**Specific plan:**
+
+```
+/challenge-plan docs/plans/2026-03-15-matches-v2.md
+```
+
+## Tips
+
+- **Run after writing-plans**: stress-test before executing
+- **Fix and re-run**: after addressing findings, challenge again until PROCEED
+- **Drill into agent**: ask to see a specific agent's full analysis for detail

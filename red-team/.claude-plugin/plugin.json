@@ -1,6 +1,7 @@
 {
   "name": "red-team",
   "description": "Plan challenger toolkit — dispatches specialized agents to stress-test implementation plans before execution",
+  "version": "1.0.0",
   "author": {
     "name": "moon1ite"
   }

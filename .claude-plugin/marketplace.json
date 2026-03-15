@@ -1,18 +1,29 @@
 {
-  "name": "my-plugins",
+  "name": "moon1ite-claude-plugins",
+  "description": "Personal Claude Code plugins for development workflow automation",
   "owner": {
     "name": "moon1ite"
-  },
-  "metadata": {
-    "description": "Personal Claude Code plugins",
-    "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "red-team",
-      "source": "./red-team",
       "description": "Plan challenger toolkit — dispatches specialized agents to stress-test implementation plans before execution",
-      "version": "1.0.0"
+      "version": "1.0.0",
+      "author": {
+        "name": "moon1ite"
+      },
+      "source": "./red-team",
+      "category": "productivity"
+    },
+    {
+      "name": "qa-toolkit",
+      "description": "QA checklist generator — dispatches specialized agents to verify design-to-implementation fidelity from any design source",
+      "version": "1.0.0",
+      "author": {
+        "name": "moon1ite"
+      },
+      "source": "./qa-toolkit",
+      "category": "testing"
     }
   ]
 }

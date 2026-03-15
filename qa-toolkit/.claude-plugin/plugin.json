@@ -1,0 +1,8 @@
+{
+  "name": "qa-toolkit",
+  "description": "QA checklist generator — dispatches specialized agents to verify design-to-implementation fidelity from any design source (playground HTML, Figma, screenshots, spec docs)",
+  "version": "1.0.0",
+  "author": {
+    "name": "moon1ite"
+  }
+}
